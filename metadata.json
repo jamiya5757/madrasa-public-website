@@ -1,0 +1,6 @@
+{
+  "name": "জামিয়া আরাবিয়া মদিনাতুল উলুম রাখালিয়াচালা মাদ্রাসা",
+  "description": "নূরানী মাদরাসার শিক্ষার্থীদের দৈনিক পড়া, বাড়ির কাজ ও কায়দা-আমপারা পাঠের অভিভাবক তথ্য পোর্টাল।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --font-bengali: 'Hind Siliguri', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif-bengali: 'Noto Serif Bengali', Georgia, serif;
+  --font-arabic: 'Amiri', 'Traditional Arabic', serif;
+}
+
+body {
+  font-family: var(--font-bengali);
+  background-color: #FAF8F2;
+  color: #1c1917;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif-bn {
+  font-family: var(--font-serif-bengali);
+}
+
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+
+/* Subtle islamic decorative divider */
+.islamic-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.islamic-divider::before,
+.islamic-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(180, 83, 9, 0.25), transparent);
+}
+
+/* Subtle paper texture tint */
+.bg-parchment {
+  background-color: #F8F6EE;
+}
+
+.bg-emerald-deep {
+  background-color: #06402B;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for Chrome, Safari, Opera, Firefox */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth Marquee Notice Ticker Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: marquee 55s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
