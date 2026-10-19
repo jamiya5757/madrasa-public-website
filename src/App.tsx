@@ -6,11 +6,9 @@
 import React, { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { TodaysLessonCard, Department } from './components/TodaysLessonCard';
-import { PreviousLessons } from './components/PreviousLessons';
 import { MadrasaInfo } from './components/MadrasaInfo';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
-import { LessonDetailModal } from './components/LessonDetailModal';
 import { Toast } from './components/Toast';
 import { lessonService } from './services/lessonService';
 import { Lesson, MadrasaInfo as MadrasaInfoType } from './types/lesson';
@@ -18,11 +16,9 @@ import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [todaysLesson, setTodaysLesson] = useState<Lesson | null>(null);
-  const [previousLessons, setPreviousLessons] = useState<Lesson[]>([]);
   const [madrasaInfo, setMadrasaInfo] = useState<MadrasaInfoType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeDept, setActiveDept] = useState<Department>('noorani');
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showToast, setShowToast] = useState<boolean>(false);
 
@@ -30,18 +26,15 @@ export default function App() {
     async function fetchData() {
       try {
         setLoading(true);
-        const [today, previous, info] = await Promise.all([
+        const [today, info] = await Promise.all([
           lessonService.getTodaysLesson(),
-          lessonService.getPreviousLessons(),
           lessonService.getMadrasaInfo(),
         ]);
         setTodaysLesson(today);
-        setPreviousLessons(previous);
         setMadrasaInfo(info);
       } catch (err) {
         console.error('Failed to load madrasa lesson data:', err);
         setTodaysLesson(null);
-        setPreviousLessons([]);
       } finally {
         setLoading(false);
       }
@@ -69,7 +62,7 @@ export default function App() {
       {/* Top Bar Header */}
       <Header
         onNavigateToToday={() => scrollToSection('today')}
-        onNavigateToArchive={() => scrollToSection('archive')}
+        onNavigateToArchive={() => scrollToSection('today')}
         onNavigateToAbout={() => scrollToSection('about')}
         onNavigateToContact={() => scrollToSection('contact')}
       />
@@ -91,14 +84,6 @@ export default function App() {
               onCopySuccess={() => triggerToast('আজকের পড়া ক্লিপবোর্ডে কপি করা হয়েছে!')}
             />
 
-            {/* Previous Lessons Timeline (Visible for Noorani) */}
-            {activeDept === 'noorani' && (
-              <PreviousLessons
-                lessons={previousLessons}
-                onSelectLesson={(lesson) => setSelectedLesson(lesson)}
-              />
-            )}
-
             {/* About Madrasa */}
             <MadrasaInfo info={madrasaInfo} />
 
@@ -112,20 +97,13 @@ export default function App() {
         )}
       </main>
 
-      {/* Detail Modal for Previous Lessons */}
-      <LessonDetailModal
-        lesson={selectedLesson}
-        onClose={() => setSelectedLesson(null)}
-        onCopySuccess={() => triggerToast('পাঠের পূর্ণ বিবরণ কপি করা হয়েছে!')}
-      />
-
       {/* Floating Feedback Toast */}
       <Toast message={toastMessage} show={showToast} />
 
       {/* Footer */}
       <Footer
         onNavigateToToday={() => scrollToSection('today')}
-        onNavigateToArchive={() => scrollToSection('archive')}
+        onNavigateToArchive={() => scrollToSection('today')}
         onNavigateToAbout={() => scrollToSection('about')}
         onNavigateToContact={() => scrollToSection('contact')}
       />
