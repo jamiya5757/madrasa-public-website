@@ -26,15 +26,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
+  width: 100%;
 }
 
-.islamic-divider::before,
+.islamic-divider::before {
+  content: "";
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, rgba(180, 83, 9, 0.5));
+}
+
 .islamic-divider::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(180, 83, 9, 0.25), transparent);
+  height: 1.5px;
+  background: linear-gradient(to right, rgba(180, 83, 9, 0.5), transparent);
 }
 
 /* Subtle paper texture tint */
@@ -79,4 +86,26 @@ html {
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+/* Pure Fade Page Transition Animation (No movement/slide) */
+@keyframes pagePureFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-page-transition {
+  animation: pagePureFade 280ms ease-in-out forwards;
+}
+
+/* Accessibility: Disable animation when user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-transition {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 }

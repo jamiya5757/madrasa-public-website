@@ -4,25 +4,33 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Phone, BookOpen, Clock, ChevronRight, Bell } from 'lucide-react';
+import { Menu, X, Phone, ChevronRight, Bell } from 'lucide-react';
 import emblemImg from '../assets/images/madrasa_emblem_logo_1791342863943.jpg';
 import { supabase } from '../lib/supabase';
 
 interface HeaderProps {
-  onNavigateToToday: () => void;
-  onNavigateToArchive: () => void;
+  currentPath?: string;
+  onNavigateToHome?: () => void;
+  onNavigateToToday?: () => void;
+  onNavigateToArchive?: () => void;
+  onNavigateToExam?: () => void;
   onNavigateToAbout: () => void;
   onNavigateToContact: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  currentPath,
+  onNavigateToHome,
   onNavigateToToday,
-  onNavigateToArchive,
+  onNavigateToExam,
   onNavigateToAbout,
   onNavigateToContact,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notices, setNotices] = useState<any[]>([]);
+
+  const isExamActive = currentPath === '/exams' || currentPath === '/exams/';
+  const isHomeActive = currentPath === '/' || currentPath === '' || (!isExamActive && currentPath === undefined);
 
   useEffect(() => {
     async function fetchNotices() {
@@ -50,8 +58,10 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const handleNav = (action: () => void) => {
-    action();
+  const handleNav = (action?: () => void) => {
+    if (action) {
+      action();
+    }
     setMobileMenuOpen(false);
   };
 
@@ -99,10 +109,14 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between">
         {/* Zone 1: Brand Emblem & Title */}
         <a
-          href="#"
+          href="/"
           onClick={(e) => {
             e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (onNavigateToHome) {
+              onNavigateToHome();
+            } else if (onNavigateToToday) {
+              onNavigateToToday();
+            }
           }}
           className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800 rounded-lg py-1 min-w-0"
         >
@@ -133,17 +147,25 @@ export const Header: React.FC<HeaderProps> = ({
         <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-stone-700">
           <button
             type="button"
-            onClick={onNavigateToToday}
-            className="hover:text-[#0B3A26] transition-colors py-1 cursor-pointer"
+            onClick={onNavigateToHome || onNavigateToToday}
+            className={`transition-colors py-1 cursor-pointer ${
+              isHomeActive
+                ? 'text-[#0B3A26] font-bold border-b-2 border-[#0B3A26]'
+                : 'hover:text-[#0B3A26]'
+            }`}
           >
-            বিভাগ
+            হোম
           </button>
           <button
             type="button"
-            onClick={onNavigateToArchive}
-            className="hover:text-[#0B3A26] transition-colors py-1 cursor-pointer"
+            onClick={onNavigateToExam}
+            className={`transition-colors py-1 cursor-pointer ${
+              isExamActive
+                ? 'text-[#0B3A26] font-bold border-b-2 border-[#0B3A26]'
+                : 'hover:text-[#0B3A26]'
+            }`}
           >
-            পাঠসমূহ
+            পরীক্ষা
           </button>
           <button
             type="button"
@@ -161,17 +183,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </nav>
 
-        {/* Zone 3: Primary Action & Mobile Menu Toggle */}
+        {/* Zone 3: Mobile Menu Toggle */}
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={onNavigateToToday}
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-[#0A4830] hover:bg-[#073825] border border-emerald-950/20 rounded-lg shadow-xs transition-all whitespace-nowrap min-h-[42px]"
-          >
-            <BookOpen className="w-4 h-4 text-amber-300" />
-            <span>আজকের পাঠ দেখুন</span>
-          </button>
-
           {/* Mobile hamburger menu toggle */}
           <button
             type="button"
@@ -189,23 +202,28 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="lg:hidden border-t border-stone-200/90 bg-[#FAF8F2] px-4 py-4 space-y-2.5 animate-in fade-in duration-200 shadow-lg">
           <button
             type="button"
-            onClick={() => handleNav(onNavigateToToday)}
-            className="w-full text-left py-3 px-3.5 rounded-lg text-sm font-bold text-[#073D28] bg-emerald-50 border border-emerald-900/10 flex items-center justify-between min-h-[46px]"
+            onClick={() => handleNav(onNavigateToHome || onNavigateToToday)}
+            className={`w-full text-left py-3 px-3.5 rounded-lg text-sm flex items-center justify-between min-h-[46px] ${
+              isHomeActive
+                ? 'font-bold text-[#073D28] bg-emerald-50 border border-emerald-900/10'
+                : 'font-medium text-stone-800 hover:bg-stone-100'
+            }`}
           >
-            <span className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-emerald-800" />
-              <span>আজকের নূরানী পড়া</span>
-            </span>
-            <ChevronRight className="w-4 h-4 text-emerald-700" />
+            <span>হোম</span>
+            <ChevronRight className={`w-4 h-4 ${isHomeActive ? 'text-emerald-700' : 'text-stone-400'}`} />
           </button>
 
           <button
             type="button"
-            onClick={() => handleNav(onNavigateToArchive)}
-            className="w-full text-left py-3 px-3.5 rounded-lg text-sm font-medium text-stone-800 hover:bg-stone-100 min-h-[46px] flex items-center justify-between"
+            onClick={() => handleNav(onNavigateToExam)}
+            className={`w-full text-left py-3 px-3.5 rounded-lg text-sm flex items-center justify-between min-h-[46px] ${
+              isExamActive
+                ? 'font-bold text-[#073D28] bg-emerald-50 border border-emerald-900/10'
+                : 'font-medium text-stone-800 hover:bg-stone-100'
+            }`}
           >
-            <span>পূর্ববর্তী পাঠসমূহ (আর্কাইভ)</span>
-            <ChevronRight className="w-4 h-4 text-stone-400" />
+            <span>পরীক্ষা</span>
+            <ChevronRight className={`w-4 h-4 ${isExamActive ? 'text-emerald-700' : 'text-stone-400'}`} />
           </button>
 
           <button
@@ -213,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => handleNav(onNavigateToAbout)}
             className="w-full text-left py-3 px-3.5 rounded-lg text-sm font-medium text-stone-800 hover:bg-stone-100 min-h-[46px] flex items-center justify-between"
           >
-            <span>মাদরাসা পরিচিতি ও বৈশিষ্ট্য</span>
+            <span>মাদরাসা পরিচিতি</span>
             <ChevronRight className="w-4 h-4 text-stone-400" />
           </button>
 
@@ -222,7 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => handleNav(onNavigateToContact)}
             className="w-full text-left py-3 px-3.5 rounded-lg text-sm font-medium text-stone-800 hover:bg-stone-100 min-h-[46px] flex items-center justify-between"
           >
-            <span>যোগাযোগ ও অভিভাবক হেল্পলাইন</span>
+            <span>যোগাযোগ</span>
             <ChevronRight className="w-4 h-4 text-stone-400" />
           </button>
 
