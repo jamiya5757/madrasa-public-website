@@ -114,7 +114,7 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-[#073D28] shrink-0" />
-                <span>হেল্পলাইন: ০১৩৪২-৬৭৫৭৫৭ / ০১৬০৪-৯৮৮২০০</span>
+                <span>হেল্পলাইন: ০১৩৪২-৬৭৫৭৫৭</span>
               </div>
               <div className="flex items-center gap-2">
                 <BookOpen className="w-3.5 h-3.5 text-[#073D28] shrink-0" />

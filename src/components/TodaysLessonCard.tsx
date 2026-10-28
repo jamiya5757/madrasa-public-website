@@ -11,13 +11,14 @@ import {
   Copy,
   Check,
   AlertCircle,
-  Sparkles,
-  HelpCircle,
-  FileCheck2,
-  UserCheck,
+  Award,
+  User,
+  Loader2,
+  ChevronDown,
 } from 'lucide-react';
-import { Lesson } from '../types/lesson';
+import { Lesson, HifzWeeklyRecord, HifzStudentItem } from '../types/lesson';
 import { lessonService } from '../services/lessonService';
+import { hifzService } from '../services/hifzService';
 
 export type Department = 'noorani' | 'nazera' | 'hifz' | 'kitab';
 
@@ -62,7 +63,33 @@ export const NOORANI_CLASSES: { id: NooraniClass; name: string }[] = [
   { id: 'first', name: 'প্রথম শ্রেণি' },
 ];
 
+const BANGLA_MONTHS: Record<number, string> = {
+  1: 'জানুয়ারি',
+  2: 'ফেব্রুয়ারি',
+  3: 'মার্চ',
+  4: 'এপ্রিল',
+  5: 'মে',
+  6: 'জুন',
+  7: 'জুলাই',
+  8: 'আগস্ট',
+  9: 'সেপ্টেম্বর',
+  10: 'অক্টোবর',
+  11: 'নভেম্বর',
+  12: 'ডিসেম্বর',
+};
+
+const DAYS_OF_WEEK = [
+  { index: 0, name: 'শনিবার' },
+  { index: 1, name: 'রবিবার' },
+  { index: 2, name: 'সোমবার' },
+  { index: 3, name: 'মঙ্গলবার' },
+  { index: 4, name: 'বুধবার' },
+  { index: 5, name: 'বৃহস্পতিবার' },
+  { index: 6, name: 'শুক্রবার' },
+];
+
 function toBnDigits(num: number | string): string {
+  if (num === null || num === undefined || num === '') return '০';
   const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
   return String(num).replace(/\d/g, (d) => bnDigits[parseInt(d, 10)]);
 }
@@ -158,6 +185,17 @@ export const TodaysLessonCard: React.FC<TodaysLessonCardProps> = ({
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(lesson ?? null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Hifz States
+  const [hifzStudents, setHifzStudents] = useState<HifzStudentItem[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState<boolean>(false);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<HifzStudentItem | null>(null);
+
+  const [studentRecords, setStudentRecords] = useState<HifzWeeklyRecord[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState<boolean>(false);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+
   const activeDept = externalActiveDept ?? internalDept;
   const displayLesson = currentLesson ?? lesson;
 
@@ -191,6 +229,71 @@ export const TodaysLessonCard: React.FC<TodaysLessonCardProps> = ({
       isMounted = false;
     };
   }, [activeDept, selectedClass, lesson]);
+
+  // Helper to fetch reading records for a student
+  const fetchStudentRecords = async (studentId: string) => {
+    setRecordsLoading(true);
+    setRecordsError(null);
+    setStudentRecords([]);
+    setSelectedRecordId(null);
+
+    try {
+      const records = await hifzService.getPublicWeeklyRecordsByStudent(studentId);
+      setStudentRecords(records);
+      if (records.length > 0) {
+        setSelectedRecordId(records[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch student weekly records:', err);
+      setRecordsError('শিক্ষার্থীর পড়ার বিবরণী লোড করতে সমস্যা হয়েছে।');
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // Fetch Hifz students list when activeDept is 'hifz'
+  // Auto-select the first student (earliest form number)
+  useEffect(() => {
+    let isMounted = true;
+    if (activeDept === 'hifz') {
+      setStudentsLoading(true);
+      setStudentsError(null);
+
+      hifzService
+        .getHifzStudents()
+        .then((students) => {
+          if (isMounted) {
+            setHifzStudents(students);
+            setStudentsLoading(false);
+
+            if (students.length > 0) {
+              const defaultStudent = students[0];
+              setSelectedStudent(defaultStudent);
+              fetchStudentRecords(defaultStudent.id);
+            } else {
+              setSelectedStudent(null);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to fetch Hifz students list:', err);
+          if (isMounted) {
+            setStudentsError('হিফজ বিভাগের শিক্ষার্থীদের তালিকা লোড করতে সমস্যা হয়েছে।');
+            setStudentsLoading(false);
+          }
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [activeDept]);
+
+  // Handle clicking a student's circular avatar
+  const handleSelectStudent = (student: HifzStudentItem) => {
+    if (selectedStudent?.id === student.id) return;
+    setSelectedStudent(student);
+    fetchStudentRecords(student.id);
+  };
 
   const handleSelectDept = (dept: Department) => {
     setInternalDept(dept);
@@ -231,6 +334,14 @@ ${displayLesson.note ? `\n💡 অভিভাবক নির্দেশনা
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(textToShare)}`;
     window.open(url, '_blank');
   };
+
+  const activeHifzRecord =
+    studentRecords.find((r) => r.id === selectedRecordId) || studentRecords[0] || null;
+
+  // Compute dynamic banner title based on active record
+  const hifzBannerTitle = activeHifzRecord
+    ? `${BANGLA_MONTHS[activeHifzRecord.month] || activeHifzRecord.month} ${toBnDigits(activeHifzRecord.year)} - ${activeHifzRecord.week} সপ্তাহের হিফজ বিভাগের পাঠ ও অগ্রগতি`
+    : 'হিফজ বিভাগের পাঠ ও অগ্রগতি';
 
   const currentDate = new Date();
 
@@ -477,6 +588,299 @@ ${displayLesson.note ? `\n💡 অভিভাবক নির্দেশনা
               <span>ইনশাআল্লাহ প্রতিদিন আছরের পর পড়া প্রকাশ করা হবে</span>
             </div>
           </div>
+        </div>
+      ) : activeDept === 'hifz' ? (
+        /* Complete Hifz Department Section */
+        <div className="bg-white rounded-2xl border border-stone-200/90 shadow-xs overflow-hidden transition-all">
+          {/* Dynamic Dark Green Header Banner */}
+          <div className="bg-[#006747] text-white py-3.5 px-5 border-b border-[#004D3A] text-center flex flex-col items-center gap-1">
+            <h1 className="text-base sm:text-lg md:text-xl font-serif-bn font-bold text-white tracking-tight leading-snug flex items-center gap-2 justify-center">
+              <Award className="w-5 h-5 text-amber-400 shrink-0" />
+              <span>{hifzBannerTitle}</span>
+            </h1>
+          </div>
+
+          {studentsLoading ? (
+            <div className="p-12 text-center bg-white flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-[#006747]" />
+              <p className="text-sm font-semibold text-stone-700 font-serif-bn">
+                হিফজ বিভাগের শিক্ষার্থীদের তালিকা লোড হচ্ছে...
+              </p>
+            </div>
+          ) : studentsError ? (
+            <div className="p-8 text-center bg-white">
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-700 border border-red-600/20 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                <AlertCircle className="w-6 h-6 text-red-700" />
+              </div>
+              <h3 className="text-base font-serif-bn font-bold text-stone-900 mb-1">
+                শিক্ষার্থীদের তালিকা লোড করতে সমস্যা হয়েছে।
+              </h3>
+              <p className="text-xs text-stone-600 max-w-md mx-auto">{studentsError}</p>
+            </div>
+          ) : hifzStudents.length === 0 ? (
+            <div className="p-10 text-center bg-white">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-800 border border-amber-600/20 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                <BookOpen className="w-7 h-7 text-amber-800" />
+              </div>
+              <h3 className="text-lg font-serif-bn font-bold text-stone-900 mb-1">
+                {DEPARTMENTS.find((d) => d.id === 'hifz')?.emptyMessage}
+              </h3>
+              <p className="text-xs text-stone-600 font-serif-bn">
+                ইনশাআল্লাহ শীঘ্রই হিফজ বিভাগের শিক্ষার্থীদের তালিকা ও পাঠের অগ্রগতি এখানে প্রকাশ করা হবে।
+              </p>
+            </div>
+          ) : (
+            <div>
+              {/* 1. STUDENTS CIRCULAR AVATARS HORIZONTAL ROW */}
+              <div className="py-2.5 px-3 sm:py-3 sm:px-4 bg-stone-50/80 border-b border-stone-200/90 overflow-hidden">
+                <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto pb-1.5 pt-1.5 px-1.5 sm:px-2 no-scrollbar">
+                  {hifzStudents.map((st) => {
+                    const isSelected = selectedStudent?.id === st.id;
+                    return (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => handleSelectStudent(st)}
+                        className="flex flex-col items-center gap-1.5 cursor-pointer group shrink-0 transition-transform active:scale-95 p-1"
+                      >
+                        {/* Circular Avatar */}
+                        <div
+                          className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden transition-all bg-amber-50 flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? 'ring-4 ring-[#006747] ring-offset-2 scale-105 shadow-md'
+                              : 'border-2 border-amber-600/30 group-hover:border-[#006747] group-hover:scale-105 shadow-2xs'
+                          }`}
+                        >
+                          {st.photo_url ? (
+                            <img
+                              src={st.photo_url}
+                              alt={st.name}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <User className="w-8 h-8 sm:w-10 sm:h-10 text-amber-800/70" />
+                          )}
+                        </div>
+
+                        {/* Student Name */}
+                        <span
+                          className={`text-xs font-serif-bn font-bold text-center max-w-[80px] sm:max-w-[96px] truncate ${
+                            isSelected ? 'text-[#006747] font-extrabold' : 'text-stone-800 group-hover:text-[#006747]'
+                          }`}
+                        >
+                          {st.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. SELECTED STUDENT READING LOGS VIEW */}
+              {selectedStudent && (
+                <div>
+                  {/* Records Loading / Error / Empty States */}
+                  {recordsLoading ? (
+                    <div className="p-12 text-center bg-white flex flex-col items-center justify-center gap-3">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#006747]" />
+                      <p className="text-sm font-semibold text-stone-700 font-serif-bn">
+                        {selectedStudent.name}-এর পড়ার বিবরণী লোড হচ্ছে...
+                      </p>
+                    </div>
+                  ) : recordsError ? (
+                    <div className="p-8 text-center bg-white">
+                      <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-700 border border-red-600/20 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                        <AlertCircle className="w-6 h-6 text-red-700" />
+                      </div>
+                      <h3 className="text-base font-serif-bn font-bold text-stone-900 mb-1">
+                        তথ্য লোড করতে সমস্যা হয়েছে।
+                      </h3>
+                      <p className="text-xs text-stone-600 max-w-md mx-auto">{recordsError}</p>
+                    </div>
+                  ) : studentRecords.length === 0 ? (
+                    <div className="p-10 text-center bg-white">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-800 border border-amber-600/20 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                        <BookOpen className="w-7 h-7 text-amber-800" />
+                      </div>
+                      <h3 className="text-lg font-serif-bn font-bold text-stone-900 mb-1">
+                        এই শিক্ষার্থীর হিফজ বিভাগের পড়া এখনো প্রকাশ করা হয়নি।
+                      </h3>
+                      <p className="text-xs text-stone-600 font-serif-bn max-w-md mx-auto">
+                        ইনশাআল্লাহ শিক্ষক মহোদয় প্রকাশ করার পর এখানে এই শিক্ষার্থীর সাপ্তাহিক ও দৈনন্দিন পড়া দেখতে পাবেন।
+                      </p>
+                    </div>
+                  ) : activeHifzRecord ? (
+                    <div>
+                      {/* Daily Reading Log Table Container */}
+                      <div className="pt-3 pb-4 px-3 sm:pt-3.5 sm:pb-5 sm:px-5 space-y-3 bg-white">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-stone-200">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-base">📅</span>
+                            <h3 className="text-xs sm:text-sm font-serif-bn font-bold text-[#006747]">
+                              দৈনিক পড়ার বিবরণ (শনিবার থেকে শুক্রবার)
+                            </h3>
+                            {activeHifzRecord && (
+                              <span className="text-xs font-bold text-amber-900 bg-amber-50 border border-amber-300 px-2.5 py-0.5 rounded-md font-serif-bn">
+                                {activeHifzRecord.week} সপ্তাহ · {BANGLA_MONTHS[activeHifzRecord.month] || activeHifzRecord.month} · {toBnDigits(activeHifzRecord.year)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Multiple Published Records Week Selector if student has > 1 records */}
+                          {studentRecords.length > 1 && (
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span className="font-bold text-[#006747] font-serif-bn shrink-0">
+                                সপ্তাহ পরিবর্তন:
+                              </span>
+                              <div className="relative inline-block">
+                                <select
+                                  value={activeHifzRecord?.id || ''}
+                                  onChange={(e) => setSelectedRecordId(e.target.value)}
+                                  aria-label="সপ্তাহ নির্বাচন করুন"
+                                  className="bg-[#006747] text-white font-bold py-1 px-3 pr-7 rounded-lg border border-emerald-700 focus:outline-none cursor-pointer appearance-none text-xs font-serif-bn shadow-2xs"
+                                >
+                                  {studentRecords.map((rec) => (
+                                    <option key={rec.id} value={rec.id} className="bg-stone-900 text-white">
+                                      {rec.week} সপ্তাহ ({BANGLA_MONTHS[rec.month] || rec.month} {toBnDigits(rec.year)})
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDown className="w-3.5 h-3.5 text-amber-300 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Grouped Table Layout Matching Admin Panel Read-Only Design */}
+                        <div className="overflow-x-auto border border-stone-300 rounded-xl shadow-2xs">
+                          <table className="w-full text-center border-collapse min-w-[750px] text-xs font-serif-bn">
+                            <thead>
+                              <tr className="bg-[#006747] text-white font-bold border-b border-[#004D3A] text-xs">
+                                <th rowSpan={2} className="py-2.5 px-3 border-r border-[#004D3A] w-24">
+                                  দিন
+                                </th>
+                                <th colSpan={2} className="py-2.5 px-3 border-r border-[#004D3A] bg-[#00573B]">
+                                  সবক
+                                </th>
+                                <th colSpan={4} className="py-2.5 px-3 border-r border-[#004D3A] bg-[#006747]">
+                                  সাত সবক
+                                </th>
+                                <th colSpan={4} className="py-2.5 px-3 border-r border-[#004D3A] bg-[#00573B]">
+                                  আমুখতা
+                                </th>
+                                <th rowSpan={2} className="py-2.5 px-3 bg-[#006747]">
+                                  দৈনিক তিলাওয়াত
+                                </th>
+                              </tr>
+                              <tr className="bg-[#004D3A] text-white font-semibold border-b border-[#00382B] text-[11px]">
+                                {/* সবক */}
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পারা</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পৃষ্ঠা</th>
+                                {/* সাত সবক */}
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পারা</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পৃষ্ঠা</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পরিমাণ</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">ভুল</th>
+                                {/* আমুখতা */}
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পারা</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পৃষ্ঠা</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">পরিমাণ</th>
+                                <th className="py-1.5 px-2 border-r border-[#00382B]">ভুল</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-200 bg-white text-xs text-stone-800">
+                              {DAYS_OF_WEEK.map((d) => {
+                                const log = activeHifzRecord.daily_logs?.find(
+                                  (l) => l.day_index === d.index
+                                );
+
+                                return (
+                                  <tr key={d.index} className="hover:bg-amber-50/40 transition-colors">
+                                    <td className="py-2.5 px-2 font-bold text-[#004D3A] bg-stone-50 border-r border-stone-200 font-serif-bn">
+                                      {d.name}
+                                    </td>
+                                    {/* সবক */}
+                                    <td className="py-2 px-1 border-r border-stone-200 font-serif-bn">
+                                      {log?.sabak_para || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-300 font-serif-bn">
+                                      {log?.sabak_page || '—'}
+                                    </td>
+                                    {/* সাত সবক */}
+                                    <td className="py-2 px-1 border-r border-stone-200 font-serif-bn">
+                                      {log?.sabat_sabak_para || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-200 font-serif-bn">
+                                      {log?.sabat_sabak_page || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-200 font-medium font-serif-bn">
+                                      {log?.sabat_sabak_amount || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-300 font-bold text-red-600 font-serif-bn">
+                                      {log?.sabat_sabak_mistakes !== undefined && log.sabat_sabak_mistakes > 0
+                                        ? toBnDigits(log.sabat_sabak_mistakes)
+                                        : '—'}
+                                    </td>
+                                    {/* আমুখতা */}
+                                    <td className="py-2 px-1 border-r border-stone-200 font-serif-bn">
+                                      {log?.amukhta_para || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-200 font-serif-bn">
+                                      {log?.amukhta_page || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-200 font-medium font-serif-bn">
+                                      {log?.amukhta_amount || '—'}
+                                    </td>
+                                    <td className="py-2 px-1 border-r border-stone-300 font-bold text-red-600 font-serif-bn">
+                                      {log?.amukhta_mistakes !== undefined && log.amukhta_mistakes > 0
+                                        ? toBnDigits(log.amukhta_mistakes)
+                                        : '—'}
+                                    </td>
+                                    {/* দৈনিক তিলাওয়াত */}
+                                    <td className="py-2 px-2 text-stone-700 text-left max-w-[200px] break-words font-serif-bn">
+                                      {log?.tilawat_details || '—'}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Weekly Shabina Read-Only Section */}
+                      <div className="p-4 mx-4 sm:mx-5 mb-4 sm:mb-5 bg-[#FFFDF7] border border-stone-300 rounded-xl text-xs space-y-2.5">
+                        <div className="text-[#004D3A] font-bold border-b border-stone-200 pb-2 flex items-center gap-1.5 font-serif-bn text-xs sm:text-sm">
+                          <span>📄</span>
+                          <span>তিলাওয়াতকৃত সাপ্তাহিক শবিনার পড়া</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                          <div>
+                            <span className="font-semibold text-stone-600 block font-serif-bn text-[11px] sm:text-xs">মোট:</span>
+                            <span className="font-bold text-[#006747] text-sm font-serif-bn">
+                              {activeHifzRecord.shabina_total || '—'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-stone-600 block font-serif-bn text-[11px] sm:text-xs">কোন কোন পারা:</span>
+                            <span className="font-bold text-emerald-950 text-sm font-serif-bn">
+                              {activeHifzRecord.paras_read || '—'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-stone-600 block font-serif-bn text-[11px] sm:text-xs">মোট লোকমার সংখ্যা:</span>
+                            <span className="inline-block px-2.5 py-0.5 bg-amber-100 text-amber-900 font-bold text-xs sm:text-sm rounded-md border border-amber-300 font-serif-bn mt-0.5">
+                              {activeHifzRecord.total_lokma ? `${toBnDigits(activeHifzRecord.total_lokma)} টি` : '০ টি'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         /* Future Department Empty State */

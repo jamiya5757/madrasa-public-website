@@ -63,3 +63,51 @@ export interface DailyLessonRecord {
   updated_at?: string;
   lesson_items?: LessonItemRecord[];
 }
+
+export interface HifzDailyLog {
+  id?: string;
+  weekly_record_id?: string;
+  day_index: number; // 0: শনিবার, 1: রবিবার, 2: সোমবার, 3: মঙ্গলবার, 4: বুধবার, 5: বৃহস্পতিবার, 6:শুক্রবার
+  day_name: string;
+  sabak_para?: string | null;
+  sabak_page?: string | null;
+  sabat_sabak_para?: string | null;
+  sabat_sabak_page?: string | null;
+  sabat_sabak_amount?: string | null;
+  sabat_sabak_mistakes?: number;
+  amukhta_para?: string | null;
+  amukhta_page?: string | null;
+  amukhta_amount?: string | null;
+  amukhta_mistakes?: number;
+  tilawat_details?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface HifzStudentItem {
+  id: string;
+  name: string;
+  admission_form_no?: string | null;
+  student_id?: string | null;
+  photo_url?: string | null;
+  has_published_records?: boolean;
+}
+
+export interface HifzWeeklyRecord {
+  id: string;
+  student_id: string;
+  student_name: string;
+  student_form_no?: string | null;
+  student_roll_no?: string | null;
+  photo_url?: string | null;
+  year: number;
+  month: number; // 1 to 12
+  week: string; // '১ম' | '২য়' | '৩য়' | '৪র্থ' | '৫ম'
+  shabina_total?: string | null;
+  paras_read?: string | null;
+  total_lokma: number;
+  is_published: boolean;
+  daily_logs?: HifzDailyLog[];
+  created_at?: string;
+  updated_at?: string;
+}
