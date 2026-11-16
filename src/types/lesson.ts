@@ -10,7 +10,7 @@ export interface Lesson {
   hijriDate?: string;    // e.g., "১৫ রবিউস সানি ১৪৪৮ হিজরি"
   dayName: string;       // e.g., "বৃহস্পতিবার"
   className: string;     // e.g., "নূরানী"
-  classLevel?: string;   // "shishu" | "first"
+  classLevel?: string;   // "play" | "nursery" | "first" | "second" | "third"
   section?: string;      // e.g., "শাখা: আল-ফালাহ"
   lessonTitle: string;   // Main subject topic
   qaida: string;         // Qaida & page information
@@ -57,7 +57,7 @@ export interface DailyLessonRecord {
   id: string;
   lesson_date: string; // YYYY-MM-DD
   category: string;    // 'noorani' | 'najera' | 'hifz' | 'kitab'
-  class_level?: string; // 'shishu' | 'first'
+  class_level?: string; // 'play' | 'nursery' | 'first' | 'second' | 'third'
   published: boolean;
   created_at?: string;
   updated_at?: string;

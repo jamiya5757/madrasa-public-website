@@ -76,7 +76,7 @@ function mapRecordToLesson(record: DailyLessonRecord): Lesson {
     hijriDate: '১৫ রবিউস সানি ১৪৪৮ হিজরি',
     dayName: getBengaliDayName(record.lesson_date),
     className: record.category === 'noorani' ? 'নূরানী' : record.category,
-    classLevel: record.class_level || 'shishu',
+    classLevel: record.class_level || 'play',
     section: 'শাখা: আল-ফালাহ',
     lessonTitle: 'মুরাক্কাব হরফের মাশক ও সূরা নাস তিলাওয়াত',
     qaida,
@@ -98,11 +98,11 @@ function mapRecordToLesson(record: DailyLessonRecord): Lesson {
 export const lessonService = {
   /**
    * Retrieves today's published lesson for a category and class level.
-   * Default: category='noorani', classLevel='shishu'
+   * Default: category='noorani', classLevel='play'
    */
   async getTodaysLesson(
     category = 'noorani',
-    classLevel = 'shishu'
+    classLevel = 'play'
   ): Promise<Lesson | null> {
     try {
       let query = supabase

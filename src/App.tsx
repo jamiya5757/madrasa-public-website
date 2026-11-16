@@ -42,7 +42,7 @@ export default function App() {
       try {
         setLoading(true);
         const [today, info] = await Promise.all([
-          lessonService.getTodaysLesson(),
+          lessonService.getTodaysLesson('noorani', 'play'),
           lessonService.getMadrasaInfo(),
         ]);
         setTodaysLesson(today);

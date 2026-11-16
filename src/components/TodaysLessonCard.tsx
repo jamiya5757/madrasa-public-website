@@ -56,11 +56,14 @@ export const DEPARTMENTS: DepartmentItem[] = [
   },
 ];
 
-export type NooraniClass = 'shishu' | 'first';
+export type NooraniClass = 'play' | 'nursery' | 'first' | 'second' | 'third';
 
 export const NOORANI_CLASSES: { id: NooraniClass; name: string }[] = [
-  { id: 'shishu', name: 'শিশু শ্রেণি' },
-  { id: 'first', name: 'প্রথম শ্রেণি' },
+  { id: 'play', name: 'প্লে' },
+  { id: 'nursery', name: 'নার্সারি' },
+  { id: 'first', name: 'প্রথম' },
+  { id: 'second', name: 'দ্বিতীয়' },
+  { id: 'third', name: 'তৃতীয়' },
 ];
 
 const BANGLA_MONTHS: Record<number, string> = {
@@ -181,7 +184,7 @@ export const TodaysLessonCard: React.FC<TodaysLessonCardProps> = ({
 }) => {
   const [copied, setCopied] = useState<boolean>(false);
   const [internalDept, setInternalDept] = useState<Department>('noorani');
-  const [selectedClass, setSelectedClass] = useState<NooraniClass>('shishu');
+  const [selectedClass, setSelectedClass] = useState<NooraniClass>('play');
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(lesson ?? null);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -415,7 +418,7 @@ ${displayLesson.note ? `\n💡 অভিভাবক নির্দেশনা
             </h1>
 
             {/* Class Selector Tabs for Noorani */}
-            <div className="inline-flex items-center gap-1.5 p-1 rounded-xl bg-emerald-950/70 border border-emerald-800/40">
+            <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 rounded-xl bg-emerald-950/70 border border-emerald-800/40 max-w-full overflow-x-auto no-scrollbar">
               {NOORANI_CLASSES.map((cls) => {
                 const isSelected = selectedClass === cls.id;
                 return (
@@ -423,7 +426,7 @@ ${displayLesson.note ? `\n💡 অভিভাবক নির্দেশনা
                     key={cls.id}
                     type="button"
                     onClick={() => setSelectedClass(cls.id)}
-                    className={`px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    className={`px-2.5 sm:px-3.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                       isSelected
                         ? 'bg-amber-500 text-stone-950 shadow-2xs'
                         : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
